@@ -1,19 +1,25 @@
+const localStorageKey = 'timers-by-dates';
+
 const toolbar = document.getElementById('toolbar');
 const daysContainer = document.querySelector('.days');
 const newTimerDialog = document.getElementById('new-timer');
 
-let lastId = 0;
 
 const updateInterval = 300;
 
-const timers = [
+const initialData = loadData();
+
+let {lastId} = initialData;
+
+const {timers} = initialData;
+[
   {
     id: '-1',
     date: '2024-09-08',
     name: 'Lunch',
     time: 0,
-    running: false,
-    lastUpdate: 123995362464,
+    running: true,
+    lastUpdate: 1725955085468,
   }
 ];
 
@@ -21,7 +27,21 @@ toolbar.onclick = handleToolbarClick;
 daysContainer.onsubmit = handleTimerInteraction;
 newTimerDialog.onsubmit = handleNewTimerDialogSubmit;
 
+renderData();
 beginTimerUpdates();
+
+function loadData() {
+  const data = localStorage.getItem(localStorageKey);
+
+  return data ? JSON.parse(data) : {lastId: 0, timers: []};
+}
+
+function saveData() {
+  const data = {lastId, timers};
+  const json = JSON.stringify(data);
+
+  localStorage.setItem(localStorageKey, json);
+}
 
 function handleToolbarClick(e) {
   const btn = e.target.closest('button');
@@ -39,11 +59,17 @@ function handleTimerInteraction(e) {
   const id = form.id.value;
 
   if (btn.value === 'run') {
-    btn.disabled = true;
+    const pauseBtn = btn.nextElementSibling;
+
+    btn.hidden = true;
+    pauseBtn.hidden = false;
     runTimer(id);
 
   } else if (btn.value === 'pause') {
-    btn.disabled = true;
+    const runBtn = btn.previousElementSibling;
+    
+    runBtn.hidden = false;
+    btn.hidden = true;
     pauseTimer(id);
 
   } else if (btn.value === 'rename') {
@@ -60,6 +86,8 @@ function handleNewTimerDialogSubmit(e) {
     const form = e.target;
     const date = getIsoDate(new Date());
     const name = form.name.value;
+
+    form.reset();
     
     addTimer(date, name);
     renderData();
@@ -198,6 +226,21 @@ function formatTime(ms) {
 function beginTimerUpdates() {
   setInterval(() => {
     timers.forEach(updateTimer);
-    renderData();
+
+    saveData();
+
+    updateTimerOutputs();
   }, updateInterval);
+}
+
+function updateTimerOutputs() {
+  const runningTimers = timers.filter(t => t.running);
+
+  for (const timer of runningTimers) {
+    const { id, time } = timer;
+    const timerItem = document.querySelector(`[data-id="${id}"]`);
+    const output = timerItem.querySelector('.time');
+
+    output.value = formatTime(time);
+  }
 }
