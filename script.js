@@ -4,7 +4,6 @@ const toolbar = document.getElementById('toolbar');
 const daysContainer = document.querySelector('.days');
 const newTimerDialog = document.getElementById('new-timer');
 
-
 const updateInterval = 300;
 
 const initialData = loadData();
